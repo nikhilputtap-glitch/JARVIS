@@ -898,8 +898,11 @@ START:
             }
             
             // Retry logic
-            if (errorMessage.includes("Internal error")) {
-              console.log("Retrying connection in 2 seconds...");
+            const retryableErrors = ["Internal error", "The service is currently unavailable", "Network error"];
+            const shouldRetry = retryableErrors.some(e => errorMessage.includes(e));
+            
+            if (shouldRetry) {
+              console.log(`Retrying connection in 2 seconds due to: ${errorMessage}`);
               setTimeout(connect, 2000);
             } else {
               setError(errorMessage);
@@ -920,8 +923,18 @@ START:
 
     } catch (err: any) {
       console.error("Connection Catch Error:", err);
-      setError(err.message === "Network error" ? "Network error: Check your API key or internet connection." : err.message);
-      setConnecting(false);
+      const errorMessage = err.message || "";
+      
+      const retryableErrors = ["Internal error", "The service is currently unavailable", "Network error"];
+      const shouldRetry = retryableErrors.some(e => errorMessage.includes(e));
+      
+      if (shouldRetry) {
+        console.log(`Retrying connection in 2 seconds due to: ${errorMessage}`);
+        setTimeout(connect, 2000);
+      } else {
+        setError(errorMessage);
+        setConnecting(false);
+      }
     }
   }, []);
 
