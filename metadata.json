@@ -1,0 +1,9 @@
+{
+  "name": "JARVIS Interface",
+  "description": "Conversational voice app using Gemini 2.5 Native Audio (Live API)",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation",
+    "camera"
+  ]
+}

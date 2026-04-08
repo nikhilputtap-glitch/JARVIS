@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users/{userId}/memories
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required) - The ID of the user.
+    //   - content: string (required, < 1000 chars) - The memory content.
+    //   - timestamp: timestamp (required) - When the memory was created.
+    //   - type: string (required, 'conversation' or 'preference') - Type of memory.
+    //
+    // Collection: users/{userId}/alarms
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required) - The ID of the user.
+    //   - time: timestamp (required) - When the alarm should go off.
+    //   - label: string (optional, < 100 chars) - Optional label for the alarm.
+    //   - active: boolean (required) - Whether the alarm is active.
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidMemory(data) {
+      return data.keys().hasAll(['userId', 'content', 'timestamp', 'type']) &&
+             data.keys().hasOnly(['userId', 'content', 'timestamp', 'type']) &&
+             data.userId is string &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 1000 &&
+             data.timestamp is timestamp &&
+             data.type in ['conversation', 'preference'];
+    }
+
+    function isValidAlarm(data) {
+      return data.keys().hasAll(['userId', 'time', 'active']) &&
+             data.keys().hasOnly(['userId', 'time', 'label', 'active']) &&
+             data.userId is string &&
+             data.time is timestamp &&
+             data.active is bool &&
+             (!('label' in data) || (data.label is string && data.label.size() < 100));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /users/{userId}/memories/{memoryId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidMemory(request.resource.data) && request.resource.data.userId == userId;
+      allow update: if false; // Memories are immutable
+      allow delete: if false; // Memories are immutable
+    }
+
+    match /users/{userId}/alarms/{alarmId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidAlarm(request.resource.data) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && isValidAlarm(request.resource.data) && request.resource.data.userId == userId;
+      allow delete: if isOwner(userId);
+    }
+  }
+}

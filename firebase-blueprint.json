@@ -1,0 +1,38 @@
+{
+  "entities": {
+    "UserMemory": {
+      "title": "UserMemory",
+      "description": "Stores conversation history and user preferences for long-term memory.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user." },
+        "content": { "type": "string", "description": "The memory content." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the memory was created." },
+        "type": { "type": "string", "description": "Type of memory (e.g., 'conversation', 'preference')." }
+      },
+      "required": ["userId", "content", "timestamp", "type"]
+    },
+    "Alarm": {
+      "title": "Alarm",
+      "description": "Stores user alarms.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user." },
+        "time": { "type": "string", "format": "date-time", "description": "When the alarm should go off." },
+        "label": { "type": "string", "description": "Optional label for the alarm." },
+        "active": { "type": "boolean", "description": "Whether the alarm is active." }
+      },
+      "required": ["userId", "time", "active"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/memories/{memoryId}": {
+      "schema": { "$ref": "UserMemory" },
+      "description": "User specific memories."
+    },
+    "/users/{userId}/alarms/{alarmId}": {
+      "schema": { "$ref": "Alarm" },
+      "description": "User specific alarms."
+    }
+  }
+}
