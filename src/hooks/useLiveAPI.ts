@@ -35,9 +35,10 @@ export function useLiveAPI() {
     setConnecting(true);
     setError(null);
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
+      // Support both AI Studio (process.env) and external deployments like Vercel (import.meta.env)
+      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
       if (!apiKey || apiKey === "undefined" || apiKey === "null") {
-        throw new Error("GEMINI_API_KEY is missing. Please configure it in the AI Studio settings.");
+        throw new Error("GEMINI_API_KEY is missing. If deployed on Vercel, ensure VITE_GEMINI_API_KEY is set in Environment Variables.");
       }
       
       const ai = new GoogleGenAI({ apiKey });
