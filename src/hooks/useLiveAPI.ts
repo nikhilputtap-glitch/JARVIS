@@ -46,7 +46,7 @@ export function useLiveAPI() {
       streamerRef.current = new AudioStreamer();
       
       const sessionPromise = ai.live.connect({
-        model: "gemini-2.5-flash-native-audio-preview-12-2025",
+        model: "gemini-3.1-flash-live-preview",
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -903,8 +903,8 @@ START:
             const shouldRetry = retryableErrors.some(e => errorMessage.includes(e));
             
             if (shouldRetry) {
-              console.log(`Retrying connection in 2 seconds due to: ${errorMessage}`);
-              setTimeout(connect, 2000);
+              console.log(`Retrying connection in 5 seconds due to: ${errorMessage}`);
+              setTimeout(connect, 5000);
             } else {
               setError(errorMessage);
               disconnect();
