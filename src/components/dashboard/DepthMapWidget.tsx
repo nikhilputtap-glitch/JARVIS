@@ -40,31 +40,32 @@ const DepthMapWidget: React.FC = () => {
           baseOptions: {
             modelAssetPath: `https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite`
           },
-          runningMode: "VIDEO",
-          outputCategoryMask: true
+          runningMode: "VIDEO"
         });
         console.log("Segmenter created");
 
         const process = () => {
           if (!isMounted || !videoRef.current || !canvasRef.current) return;
-          
           console.log("Processing frame...");
+          
           segmenter.segmentForVideo(videoRef.current, performance.now(), (result) => {
             if (!isMounted) return;
-            
-            console.log("Segmenter result:", result);
-            
             if (!result.categoryMask) {
-              console.log("No categoryMask found in result. Keys:", Object.keys(result));
-              requestAnimationFrame(process);
+              console.log("No categoryMask found in result");
               return;
             }
-            
-            console.log("Mask received, dimensions:", result.categoryMask.width, result.categoryMask.height);
+            console.log("Mask data length:", result.categoryMask.getAsUint8Array().length);
             
             const ctx = canvasRef.current!.getContext('2d');
             if (ctx) {
+              // Test rectangle
+              ctx.fillStyle = 'red';
+              ctx.fillRect(0, 0, 50, 50);
+              
               const maskData = result.categoryMask.getAsUint8Array();
+              console.log("Canvas dim:", canvasRef.current.width, canvasRef.current.height);
+              console.log("Mask dim:", result.categoryMask.width, result.categoryMask.height);
+              console.log("Video dim:", videoRef.current!.videoWidth, videoRef.current!.videoHeight);
 
               if (canvasRef.current.width !== result.categoryMask.width) {
                 canvasRef.current.width = result.categoryMask.width;
@@ -89,8 +90,8 @@ const DepthMapWidget: React.FC = () => {
               }
               ctx.putImageData(imageData, 0, 0);
             }
-            requestAnimationFrame(process);
           });
+          requestAnimationFrame(process);
         };
         process();
       } catch (err) {

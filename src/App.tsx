@@ -115,27 +115,6 @@ export default function App() {
   const [showDashboard, setShowDashboard] = useState(false);
   const [micPermissionGranted, setMicPermissionGranted] = useState<boolean>(false);
   const [isPushToTalk, setIsPushToTalk] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
-
-  useEffect(() => {
-    const handler = (e: any) => {
-      e.preventDefault();
-      setInstallPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  const handleInstall = () => {
-    if (installPrompt) {
-      installPrompt.prompt();
-      installPrompt.userChoice.then((choiceResult: any) => {
-        if (choiceResult.outcome === 'accepted') {
-          setInstallPrompt(null);
-        }
-      });
-    }
-  };
 
   const requestMicPermission = async () => {
     try {
@@ -198,9 +177,9 @@ export default function App() {
 
       {/* Top Left HUD */}
       <motion.div 
-        initial={{ opacity: 0, x: -100 }}
+        initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+        transition={{ duration: 0.8, delay: 0.5 }}
         className="absolute top-8 left-8 flex flex-col gap-4 z-10 hidden md:flex"
       >
         <div className="flex flex-col gap-1 text-xs tracking-[0.2em] opacity-80">
@@ -215,9 +194,9 @@ export default function App() {
 
       {/* Top Right HUD */}
       <motion.div 
-        initial={{ opacity: 0, x: 100 }}
+        initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+        transition={{ duration: 0.8, delay: 0.5 }}
         className="absolute top-8 right-8 flex flex-col gap-4 z-10 hidden md:flex items-end"
       >
         <div className="flex flex-col gap-1 text-xs tracking-[0.2em] opacity-80 text-right">
@@ -253,16 +232,6 @@ export default function App() {
       >
         <LayoutDashboard className="w-5 h-5" />
       </button>
-
-      {/* Install Button */}
-      {installPrompt && (
-        <button 
-          onClick={handleInstall}
-          className="absolute top-8 right-32 md:top-auto md:bottom-8 md:right-32 z-50 p-3 rounded-full bg-cyan-950/30 border border-cyan-500/30 text-cyan-500 hover:bg-cyan-900/50 hover:text-cyan-300 transition-all backdrop-blur-sm"
-        >
-          <ExternalLink className="w-5 h-5" />
-        </button>
-      )}
 
       {/* Dashboard View */}
       {showDashboard && (

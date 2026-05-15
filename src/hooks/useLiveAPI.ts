@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
 import { GoogleGenAI, LiveServerMessage, Type, Modality } from '@google/genai';
-import html2canvas from 'html2canvas';
 import { AudioRecorder, AudioStreamer } from '../lib/audio';
 import { addMemory } from '../services/memoryService';
 import { setAlarm } from '../services/alarmService';
@@ -35,10 +34,9 @@ export function useLiveAPI() {
     setConnecting(true);
     setError(null);
     try {
-      // Support both AI Studio (process.env) and external deployments like Vercel (import.meta.env)
-      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey || apiKey === "undefined" || apiKey === "null") {
-        throw new Error("GEMINI_API_KEY is missing. If deployed on Vercel, ensure VITE_GEMINI_API_KEY is set in Environment Variables.");
+        throw new Error("GEMINI_API_KEY is missing. Please configure it in the AI Studio settings.");
       }
       
       const ai = new GoogleGenAI({ apiKey });
@@ -46,7 +44,7 @@ export function useLiveAPI() {
       streamerRef.current = new AudioStreamer();
       
       const sessionPromise = ai.live.connect({
-        model: "gemini-3.1-flash-live-preview",
+        model: "gemini-2.5-flash-native-audio-preview-12-2025",
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -242,13 +240,13 @@ START:
               },
               {
                 name: 'sendMessage',
-                description: 'Prepares a message to be sent via WhatsApp, SMS, Email, Instagram, or Facebook. Opens the respective app with the pre-filled message.',
+                description: 'Prepares a message to be sent via WhatsApp, SMS, or Email. Opens the respective app with the pre-filled message.',
                 parameters: {
                   type: Type.OBJECT,
                   properties: {
                     platform: {
                       type: Type.STRING,
-                      description: 'The platform to send the message on: "whatsapp", "sms", "email", "instagram", or "facebook".',
+                      description: 'The platform to send the message on: "whatsapp", "sms", or "email".',
                     },
                     message: {
                       type: Type.STRING,
@@ -370,10 +368,6 @@ START:
                 description: 'Fetches the user\'s upcoming meetings and events from their Google Calendar.',
               },
               {
-                name: 'takeScreenshot',
-                description: 'Takes a screenshot of the current screen.',
-              },
-              {
                 name: 'activateProtocol',
                 description: 'Activates a specific smart home or system protocol (e.g., "LOCKDOWN", "HOUSE PARTY").',
                 parameters: {
@@ -457,17 +451,6 @@ START:
               const text = message.serverContent.modelTurn.parts.map(p => p.text).join('');
               if (text && auth.currentUser) {
                 await addMemory(text, 'conversation');
-              }
-            }
-            // Add logging for error messages
-            const serverContent = message.serverContent as any;
-            if (serverContent?.error) {
-              console.error("Live API Error:", serverContent.error);
-              if (serverContent.error.message === 'AUTH EXPIRED') {
-                setError("Session expired. Please reconnect.");
-                disconnect();
-              } else {
-                setError(`Live API Error: ${serverContent.error.message || 'Internal error encountered.'}`);
               }
             }
             const base64Audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
@@ -567,10 +550,6 @@ START:
                   } else {
                     url = `mailto:?body=${text}`;
                   }
-                } else if (args.platform === 'instagram') {
-                  url = `https://www.instagram.com/direct/new/`;
-                } else if (args.platform === 'facebook') {
-                  url = `https://www.messenger.com/t/${args.contact || ''}`;
                 }
 
                 if (url) {
@@ -846,22 +825,6 @@ START:
                     });
                   });
                 }
-              } else if (call && call.name === 'takeScreenshot') {
-                html2canvas(document.body).then(canvas => {
-                  const link = document.createElement('a');
-                  link.download = 'screenshot.png';
-                  link.href = canvas.toDataURL('image/png');
-                  link.click();
-                  sessionPromise.then(session => {
-                    session.sendToolResponse({
-                      functionResponses: [{
-                        id: call.id,
-                        name: call.name,
-                        response: { result: "Screenshot taken." }
-                      }]
-                    });
-                  });
-                });
               } else if (call && call.name === 'activateProtocol') {
                 const args = call.args as any;
                 const protocol = args.protocolName;
@@ -891,24 +854,14 @@ START:
           },
           onerror: (err: any) => {
             console.error("Live API Error:", err);
-            let errorMessage = "Internal error encountered.";
+            let errorMessage = "Network error occurred.";
             if (err instanceof Error) {
               errorMessage = err.message;
             } else if (err && typeof err === 'object') {
               errorMessage = JSON.stringify(err, Object.getOwnPropertyNames(err));
             }
-            
-            // Retry logic
-            const retryableErrors = ["Internal error", "The service is currently unavailable", "Network error"];
-            const shouldRetry = retryableErrors.some(e => errorMessage.includes(e));
-            
-            if (shouldRetry) {
-              console.log(`Retrying connection in 5 seconds due to: ${errorMessage}`);
-              setTimeout(connect, 5000);
-            } else {
-              setError(errorMessage);
-              disconnect();
-            }
+            setError(errorMessage);
+            disconnect();
           },
           onclose: (event: any) => {
             console.log("Live API Closed:", event);
@@ -924,18 +877,8 @@ START:
 
     } catch (err: any) {
       console.error("Connection Catch Error:", err);
-      const errorMessage = err.message || "";
-      
-      const retryableErrors = ["Internal error", "The service is currently unavailable", "Network error"];
-      const shouldRetry = retryableErrors.some(e => errorMessage.includes(e));
-      
-      if (shouldRetry) {
-        console.log(`Retrying connection in 2 seconds due to: ${errorMessage}`);
-        setTimeout(connect, 2000);
-      } else {
-        setError(errorMessage);
-        setConnecting(false);
-      }
+      setError(err.message === "Network error" ? "Network error: Check your API key or internet connection." : err.message);
+      setConnecting(false);
     }
   }, []);
 

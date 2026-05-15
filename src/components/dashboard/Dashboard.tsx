@@ -9,6 +9,7 @@ import DiagnosticsWidget from './DiagnosticsWidget';
 import NewsFeedWidget from './NewsFeedWidget';
 import ProtocolsWidget from './ProtocolsWidget';
 import HologramWidget from './HologramWidget';
+import VisionHUDWidget from './VisionHUDWidget';
 import SatelliteWidget from './SatelliteWidget';
 import BriefingOverlay from './BriefingOverlay';
 import QuantumCryptoWidget from './QuantumCryptoWidget';
@@ -234,6 +235,11 @@ const Dashboard: React.FC<DashboardProps> = ({ isListening }) => {
         {/* Small Feature: Diagnostics */}
         <div className="md:col-span-2 lg:col-span-2 row-span-1 bg-cyan-950/10 border border-cyan-500/20 p-4 rounded-xl hover:border-cyan-400/40 transition-all duration-500">
           <DiagnosticsWidget />
+        </div>
+
+        {/* Medium Feature: Vision HUD */}
+        <div className="md:col-span-2 lg:col-span-3 row-span-1 bg-cyan-950/10 border border-cyan-500/20 p-4 rounded-xl hover:border-cyan-500/40 transition-all duration-500">
+          <VisionHUDWidget />
         </div>
 
         {/* Small Feature: Weather */}

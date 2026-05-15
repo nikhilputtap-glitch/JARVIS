@@ -3,7 +3,6 @@ import { motion } from 'motion/react';
 import { Lock, Unlock, Terminal } from 'lucide-react';
 
 const QuantumCryptoWidget: React.FC = () => {
-  const decryptedRef = useRef(false);
   const [decrypted, setDecrypted] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -32,7 +31,7 @@ const QuantumCryptoWidget: React.FC = () => {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = decryptedRef.current ? '#34d399' : '#22d3ee'; // emerald-400 or cyan-400
+      ctx.fillStyle = decrypted ? '#34d399' : '#22d3ee'; // emerald-400 or cyan-400
       ctx.font = `${fontSize}px monospace`;
 
       for (let i = 0; i < drops.length; i++) {
@@ -46,8 +45,7 @@ const QuantumCryptoWidget: React.FC = () => {
       }
 
       frameCount++;
-      if (frameCount > 150 && !decryptedRef.current) {
-        decryptedRef.current = true;
+      if (frameCount > 150 && !decrypted) {
         setDecrypted(true);
       }
 
@@ -59,7 +57,7 @@ const QuantumCryptoWidget: React.FC = () => {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [decrypted]);
 
   return (
     <motion.div 
