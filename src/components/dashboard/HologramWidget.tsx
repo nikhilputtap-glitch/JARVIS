@@ -1,44 +1,62 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Sphere, MeshDistortMaterial, Icosahedron, Octahedron } from '@react-three/drei';
+import { Sphere, MeshDistortMaterial, Icosahedron, Octahedron, OrbitControls, Float } from '@react-three/drei';
 import { motion } from 'motion/react';
 import { Globe, RotateCw } from 'lucide-react';
+import * as THREE from 'three';
 
 const AnimatedCore = ({ status }: { status: string }) => {
-  const meshRef = useRef<any>(null);
-  const outerRef = useRef<any>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const outerRef = useRef<THREE.Mesh>(null);
+  const distortRef = useRef<any>(null);
   
   useFrame((state) => {
-    const speed = status === 'RECALIBRATING' ? 5 : 1;
+    const time = state.clock.elapsedTime;
+    const speed = status === 'RECALIBRATING' ? 15 : 1;
     if (meshRef.current) {
-      meshRef.current.rotation.x = state.clock.elapsedTime * 0.2 * speed;
-      meshRef.current.rotation.y = state.clock.elapsedTime * 0.3 * speed;
+      meshRef.current.rotation.x = time * 0.2 * speed;
+      meshRef.current.rotation.y = time * 0.3 * speed;
+      meshRef.current.scale.setScalar(status === 'RECALIBRATING' ? 1.2 + Math.sin(time * 10) * 0.1 : 1);
     }
     if (outerRef.current) {
-      outerRef.current.rotation.x = -state.clock.elapsedTime * 0.1 * speed;
-      outerRef.current.rotation.y = -state.clock.elapsedTime * 0.15 * speed;
+      outerRef.current.rotation.x = -time * 0.1 * speed;
+      outerRef.current.rotation.y = -time * 0.15 * speed;
+    }
+    if (distortRef.current) {
+      distortRef.current.distort = status === 'RECALIBRATING' ? 0.6 : 0.3;
+      distortRef.current.speed = status === 'RECALIBRATING' ? 5 : 2;
     }
   });
 
   return (
     <group>
-      <Icosahedron ref={outerRef} args={[2, 1]}>
-        <meshBasicMaterial 
-          color={status === 'RECALIBRATING' ? "#fbbf24" : "#22d3ee"} 
-          wireframe 
-          transparent 
-          opacity={0.3} 
-        />
-      </Icosahedron>
-      <Octahedron ref={meshRef} args={[1.2, 0]}>
-        <meshBasicMaterial 
-          color={status === 'RECALIBRATING' ? "#f59e0b" : "#0ea5e9"} 
-          wireframe 
-        />
-      </Octahedron>
-      <Sphere args={[0.5, 16, 16]}>
-        <meshBasicMaterial color="#ffffff" />
-      </Sphere>
+      <Float speed={2} rotationIntensity={1} floatIntensity={0.5}>
+        <Icosahedron ref={outerRef} args={[2, 1]}>
+          <meshBasicMaterial 
+            color={status === 'RECALIBRATING' ? "#fbbf24" : "#22d3ee"} 
+            wireframe 
+            transparent 
+            opacity={status === 'RECALIBRATING' ? 0.6 : 0.2} 
+          />
+        </Icosahedron>
+        <Octahedron ref={meshRef} args={[1.2, 0]}>
+          <meshBasicMaterial 
+            color={status === 'RECALIBRATING' ? "#f59e0b" : "#0ea5e9"} 
+            wireframe 
+            transparent
+            opacity={0.8}
+          />
+        </Octahedron>
+        <Sphere args={[0.5, 32, 32]}>
+          <MeshDistortMaterial
+            ref={distortRef}
+            color={status === 'RECALIBRATING' ? "#fde68a" : "#bae6fd"}
+            speed={2}
+            distort={0.4}
+            radius={1}
+          />
+        </Sphere>
+      </Float>
     </group>
   );
 };
@@ -79,6 +97,12 @@ const HologramWidget: React.FC = () => {
         <Canvas camera={{ position: [0, 0, 5] }}>
           <ambientLight intensity={0.5} />
           <pointLight position={[10, 10, 10]} color="#22d3ee" intensity={1} />
+          <OrbitControls 
+            enableZoom={false} 
+            enablePan={false} 
+            autoRotate={status !== 'RECALIBRATING'} 
+            autoRotateSpeed={status === 'RECALIBRATING' ? 20 : 2}
+          />
           <AnimatedCore status={status} />
         </Canvas>
         

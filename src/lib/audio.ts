@@ -13,7 +13,6 @@ export class AudioRecorder {
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate: 16000,
           channelCount: 1,
           noiseSuppression: true,
           echoCancellation: true,
@@ -24,14 +23,36 @@ export class AudioRecorder {
       console.error("Microphone permission denied:", error);
       throw new Error("Microphone permission denied. Please grant access in your browser settings.");
     }
-    this.audioContext = new AudioContext({ sampleRate: 16000 });
-    this.source = this.audioContext.createMediaStreamSource(this.stream);
+    console.log("Stream obtained:", this.stream);
+    console.log("Audio tracks:", this.stream.getAudioTracks());
     
-    // Use AudioWorklet if possible, but for now, optimize ScriptProcessor
-    this.processor = this.audioContext.createScriptProcessor(2048, 1, 1);
+    this.audioContext = new AudioContext({ sampleRate: 16000, latencyHint: 'interactive' });
+    await this.audioContext.resume();
+    this.source = this.audioContext.createMediaStreamSource(this.stream);
+
+    // Apply high-pass filter to remove low-end rumble (e.g., < 85Hz)
+    const filter = this.audioContext.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 85;
+
+    // Apply dynamic compressor to level audio
+    const compressor = this.audioContext.createDynamicsCompressor();
+    compressor.threshold.value = -20; // Allow more signal, less aggressive
+    compressor.knee.value = 40;
+    compressor.ratio.value = 4; // Much less aggressive ratio for voice
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.25;
+    
+    // Use smaller buffer for lower latency
+    this.processor = this.audioContext.createScriptProcessor(1024, 1, 1);
+    console.log("ScriptProcessor created");
 
     this.processor.onaudioprocess = (e) => {
       const inputData = e.inputBuffer.getChannelData(0);
+      
+      // DEBUG: Verify it is firing
+      console.log("onaudioprocess firing", inputData.length);
+      
       const pcm16 = new Int16Array(inputData.length);
       
       let sum = 0;
@@ -42,7 +63,8 @@ export class AudioRecorder {
       }
       
       const rms = Math.sqrt(sum / inputData.length);
-      const volume = Math.min(1, rms * 10);
+      // Increased sensitivity/volume boost
+      const volume = Math.min(1, rms * 15);
       
       // Convert Int16Array to base64 efficiently
       const bytes = new Uint8Array(pcm16.buffer);
@@ -55,8 +77,11 @@ export class AudioRecorder {
       this.onData(base64, volume);
     };
 
-    this.source.connect(this.processor);
+    this.source.connect(filter);
+    filter.connect(compressor);
+    compressor.connect(this.processor);
     this.processor.connect(this.audioContext.destination);
+    // Don't connect to destination to avoid feedback loop - actually, ScriptProcessorNode usually needs to be connected to destination to process in many browsers.
   }
 
   stop() {
