@@ -14,9 +14,6 @@ export class AudioRecorder {
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
-          noiseSuppression: true,
-          echoCancellation: true,
-          autoGainControl: true,
         },
       });
     } catch (error) {
@@ -26,6 +23,9 @@ export class AudioRecorder {
     console.log("Stream obtained:", this.stream);
     console.log("Audio tracks:", this.stream.getAudioTracks());
     
+    if (this.audioContext) {
+      await this.audioContext.close();
+    }
     this.audioContext = new AudioContext({ sampleRate: 16000, latencyHint: 'interactive' });
     await this.audioContext.resume();
     this.source = this.audioContext.createMediaStreamSource(this.stream);
@@ -50,8 +50,11 @@ export class AudioRecorder {
     this.processor.onaudioprocess = (e) => {
       const inputData = e.inputBuffer.getChannelData(0);
       
-      // DEBUG: Verify it is firing
-      console.log("onaudioprocess firing", inputData.length);
+      // DEBUG: Check for silence
+      const isSilent = inputData.every(sample => Math.abs(sample) < 0.001);
+      if (isSilent) {
+        // console.warn("Input is silent");
+      }
       
       const pcm16 = new Int16Array(inputData.length);
       
@@ -77,9 +80,10 @@ export class AudioRecorder {
       this.onData(base64, volume);
     };
 
-    this.source.connect(filter);
-    filter.connect(compressor);
-    compressor.connect(this.processor);
+    // this.source.connect(filter);
+    // filter.connect(compressor);
+    // compressor.connect(this.processor);
+    this.source.connect(this.processor);
     this.processor.connect(this.audioContext.destination);
     // Don't connect to destination to avoid feedback loop - actually, ScriptProcessorNode usually needs to be connected to destination to process in many browsers.
   }

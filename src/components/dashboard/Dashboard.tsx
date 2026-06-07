@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Activity, ShieldCheck, ShieldAlert, Hand, Mic, AlertTriangle } from 'lucide-react';
+import { X, Activity, ShieldCheck, ShieldAlert, Hand, Mic, AlertTriangle, ArrowLeft } from 'lucide-react';
 import WeatherWidget from './WeatherWidget';
 import CalendarWidget from './CalendarWidget';
 import EmailWidget from './EmailWidget';
@@ -22,9 +22,10 @@ import { useSpatialAudio } from '../../hooks/useSpatialAudio';
 
 interface DashboardProps {
   isListening: boolean;
+  onClose?: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ isListening }) => {
+const Dashboard: React.FC<DashboardProps> = ({ isListening, onClose }) => {
   const [isBriefingOpen, setIsBriefingOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -183,15 +184,20 @@ const Dashboard: React.FC<DashboardProps> = ({ isListening }) => {
 
       {/* Header */}
       <div className="flex justify-between items-end border-b border-cyan-900/50 pb-4 mb-6">
-        <div>
-          <h1 className="text-2xl md:text-4xl font-bold tracking-[0.3em] uppercase text-cyan-300 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
-            Main Console
-          </h1>
-          <p className="text-[10px] tracking-[0.2em] opacity-60 mt-1 flex items-center gap-2">
-            SYS.VER: 7.4.2 // UPLINK: SECURE // AUTH: {user ? user.displayName?.toUpperCase() : 'PENDING'}
-            {isMuted && <span className="text-red-400 font-bold ml-2">[AUDIO MUTED]</span>}
-            {isListening && <span className="text-emerald-400 font-bold ml-2 flex items-center gap-1"><Mic className="w-3 h-3 animate-pulse" /> [LISTENING]</span>}
-          </p>
+        <div className="flex items-center gap-4">
+          <button onClick={onClose} className="text-cyan-400 hover:text-white transition-colors">
+            <ArrowLeft className="w-8 h-8" />
+          </button>
+          <div>
+            <h1 className="text-2xl md:text-4xl font-bold tracking-[0.3em] uppercase text-cyan-300 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
+              Main Console
+            </h1>
+            <p className="text-[10px] tracking-[0.2em] opacity-60 mt-1 flex items-center gap-2">
+              SYS.VER: 7.4.2 // UPLINK: SECURE // AUTH: {user ? user.displayName?.toUpperCase() : 'PENDING'}
+              {isMuted && <span className="text-red-400 font-bold ml-2">[AUDIO MUTED]</span>}
+              {isListening && <span className="text-emerald-400 font-bold ml-2 flex items-center gap-1"><Mic className="w-3 h-3 animate-pulse" /> [LISTENING]</span>}
+            </p>
+          </div>
         </div>
         <div className="flex flex-col items-end gap-2">
           {authError && (

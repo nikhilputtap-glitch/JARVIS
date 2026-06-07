@@ -105,8 +105,24 @@ const NotesWidget = () => {
   );
 };
 
+const AnalysisWidget = ({ analysis }: { analysis: { sentiment: string, intent: string } | null }) => {
+  return (
+    <div className="mt-4 border-t border-cyan-900/50 pt-2 w-48 text-[10px] text-cyan-400">
+      <div className="opacity-60">AI ANALYSIS:</div>
+      <div className="flex justify-between">
+        <span>SENTIMENT:</span>
+        <span className="text-cyan-200">{analysis ? analysis.sentiment.toUpperCase() : 'PENDING'}</span>
+      </div>
+      <div className="flex justify-between">
+        <span>INTENT:</span>
+        <span className="text-cyan-200">{analysis ? analysis.intent.toUpperCase() : 'PENDING'}</span>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
-  const { connected, connecting, error, connect, disconnect, volume, appToOpen, setAppToOpen, videoRef, session } = useLiveAPI();
+  const { connected, connecting, error, connect, disconnect, volume, appToOpen, setAppToOpen, videoRef, session, analysis } = useLiveAPI();
   const { executeCommand } = useVoiceCommands(session);
   const { isListening, setIsListening } = useWakeWord(() => {
     if (!connected) connect();
@@ -190,6 +206,7 @@ export default function App() {
         <TelemetryStream align="left" />
         <LiveGraph />
         <TasksWidget />
+        <AnalysisWidget analysis={analysis} />
       </motion.div>
 
       {/* Top Right HUD */}
@@ -236,7 +253,7 @@ export default function App() {
       {/* Dashboard View */}
       {showDashboard && (
         <div className="absolute inset-0 z-40 bg-black/40 backdrop-blur-md pt-20">
-          <Dashboard isListening={isListening} />
+          <Dashboard isListening={isListening} onClose={() => setShowDashboard(false)} />
         </div>
       )}
 

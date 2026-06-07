@@ -11,6 +11,7 @@ export function useLiveAPI() {
   const [error, setError] = useState<string | null>(null);
   const [volume, setVolume] = useState(0);
   const [appToOpen, setAppToOpen] = useState<{name: string, url: string} | null>(null);
+  const [analysis, setAnalysis] = useState<{sentiment: string, intent: string} | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const sessionRef = useRef<any>(null);
@@ -150,11 +151,14 @@ All should trigger direct action
 
 ----------------------------------------
 
-🎬 RESPONSE STYLE:
+🎬 RESPONSE STYLE & ANALYSIS:
 
 - Short
 - Fast
 - System-like
+- For every user input, perform a sentiment and intent analysis.
+- At the very start of your response, output a tag: [SENTIMENT: positive|neutral|negative, INTENT: command|question|chat].
+- For example: [SENTIMENT: neutral, INTENT: command] Opening YouTube.
 
 Examples:
 - "Playing music."
@@ -346,24 +350,6 @@ START:
                 }
               },
               {
-                name: 'setAlarm',
-                description: 'Sets an alarm or reminder for the user.',
-                parameters: {
-                  type: Type.OBJECT,
-                  properties: {
-                    time: {
-                      type: Type.STRING,
-                      description: 'The time for the alarm or reminder (e.g., "6 AM", "14:30").',
-                    },
-                    label: {
-                      type: Type.STRING,
-                      description: 'Optional label for the alarm.',
-                    }
-                  },
-                  required: ["time"]
-                }
-              },
-              {
                 name: 'getUpcomingMeetings',
                 description: 'Fetches the user\'s upcoming meetings and events from their Google Calendar.',
               },
@@ -449,6 +435,20 @@ START:
           onmessage: async (message: LiveServerMessage) => {
             if (message.serverContent?.modelTurn?.parts) {
               const text = message.serverContent.modelTurn.parts.map(p => p.text).join('');
+              
+              // Parse sentiment/intent
+              // Flexible regex: ignore case, allow extra spaces
+              const regex = /\[SENTIMENT:\s*(positive|neutral|negative),\s*INTENT:\s*(command|question|chat)\]/i;
+              const match = text.match(regex);
+              
+              if (match) {
+                console.log("Analysis match found:", match);
+                setAnalysis({ sentiment: match[1], intent: match[2] });
+              } else {
+                // Log what we received to debug why it's not matching
+                console.log("Received AI text (no analysis match):", text);
+              }
+
               if (text && auth.currentUser) {
                 await addMemory(text, 'conversation');
               }
@@ -900,5 +900,5 @@ START:
     setVolume(0);
   }, []);
 
-  return { connected, connecting, error, connect, disconnect, volume, appToOpen, setAppToOpen, videoRef, session: sessionRef.current };
+  return { connected, connecting, error, connect, disconnect, volume, appToOpen, setAppToOpen, videoRef, session: sessionRef.current, analysis };
 }
